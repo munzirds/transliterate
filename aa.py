@@ -8,7 +8,7 @@ st.set_page_config(
     page_title="Urdu to Hindi Transliterator",
     page_icon="🌐",
     layout="wide",
-    initial_sidebar_state="expanded"
+    
 )
 
 # Initialize session state
