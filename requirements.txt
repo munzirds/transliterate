@@ -2,3 +2,4 @@ openai
 streamlit_extras
 streamlit-arabic-support-wrapper
 indic_transliteration
+langdetect
