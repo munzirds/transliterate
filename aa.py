@@ -116,18 +116,22 @@ def transliterate_urdu(text):
     try:
         client = AzureOpenAI(
             api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-            api_version=os.getenv("AZURE_API_VERSION"),
+            api_version=os.geten v("AZURE_API_VERSION"),
             azure_endpoint=os.getenv("AZURE_ENDPOINT")
         )
         response = client.chat.completions.create(
             model=os.getenv("AZURE_MODEL_DEPLOYMENT"),
             messages=[{
                 "role": "user",
-                "content": f"Transliterate this Urdu text to Hindi Devanagari script: {text}"
+                "content": f"Transliterate this Urdu text to Hindi Devanagari script and return the result as a JSON object with a single key 'hindi' containing the transliterated text: {text}"
             }],
             temperature=0.3,
         )
-        return response.choices[0].message.content.strip()
+        # Parse JSON response
+        json_response = json.loads(response.choices[0].message.content.strip())
+        if 'hindi' not in json_response:
+            raise ValueError("JSON response does not contain 'hindi' key")
+        return json_response['hindi']
     except Exception as e:
         st.error(f"Failed to transliterate. Please try again or contact support. Error: {str(e)[:100]}")
         with open("error_log.txt", "a") as f:
