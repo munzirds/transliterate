@@ -6,6 +6,7 @@ from functools import lru_cache
 from langdetect import detect
 from indic_transliteration import sanscript
 from indic_transliteration.sanscript import transliterate as indic_transliterate
+import json
 
 # Page configuration
 st.set_page_config(
@@ -42,6 +43,7 @@ st.markdown("""
             --border-color: #dfe6e9;
             --accent-color: #0984e3;
             --button-bg: #2d3436;
+            --card-bg: #ffffff;
         }
         html, body, [class*="css"] {
             font-family: 'Poppins', sans-serif;
@@ -51,39 +53,31 @@ st.markdown("""
         .stTextArea textarea {
             font-size: 18px;
             min-height: 180px;
-            background-color: #ffffff;
+            background-color: var(--card-bg);
             color: var(--text-color);
             border: 1px solid var(--border-color);
-            border-radius: 10px;
+            border-radius: 8px;
             padding: 15px;
-            transition: all 0.3s ease;
         }
-        .stTextArea textarea:focus {
-            border-color: var(--accent-color);
-            box-shadow: 0 0 0 0.2rem rgba(9, 132, 227, 0.25);
-        }
-        .result-box {
-            background: #ffffff;
-            padding: 25px;
-            margin-top: 20px;
-            border-radius: 15px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
             border: 1px solid var(--border-color);
-            animation: fadeIn 1s ease-in-out;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
         .urdu-text {
             font-family: 'Noto Nastaliq Urdu', serif;
-            font-size: 28px;
-            color: #34495e;
-            margin-top: 10px;
+            font-size: 24px;
+            color: var(--text-color);
             direction: rtl;
             text-align: right;
             white-space: pre-wrap;
         }
         .hindi-text {
-            font-size: 26px;
+            font-size: 22px;
             color: var(--text-color);
-            margin-top: 10px;
             white-space: pre-wrap;
         }
         .stButton>button {
@@ -93,7 +87,6 @@ st.markdown("""
             border-radius: 8px;
             padding: 10px 20px;
             font-size: 16px;
-            transition: all 0.3s ease;
         }
         .stButton>button:hover {
             background-color: var(--accent-color);
@@ -104,10 +97,6 @@ st.markdown("""
             margin-top: 40px;
             color: #636e72;
         }
-        @keyframes fadeIn {
-            0% {opacity: 0; transform: translateY(20px);}
-            100% {opacity: 1; transform: translateY(0);}
-        }
     </style>
 """, unsafe_allow_html=True)
 
@@ -116,7 +105,7 @@ def transliterate_urdu(text):
     try:
         client = AzureOpenAI(
             api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-            api_version=os.geten v("AZURE_API_VERSION"),
+            api_version=os.getenv("AZURE_API_VERSION"),
             azure_endpoint=os.getenv("AZURE_ENDPOINT")
         )
         response = client.chat.completions.create(
@@ -127,7 +116,6 @@ def transliterate_urdu(text):
             }],
             temperature=0.3,
         )
-        # Parse JSON response
         json_response = json.loads(response.choices[0].message.content.strip())
         if 'hindi' not in json_response:
             raise ValueError("JSON response does not contain 'hindi' key")
@@ -166,8 +154,8 @@ def validate_input(text):
     if not text.strip():
         st.error("Please enter Urdu text.")
         return False
-    if len(text) > 1000:
-        st.error("Input text is too long. Please limit to 1000 characters.")
+    if len(text) > 250:
+        st.error("Input text is too long. Please limit to 250 characters.")
         return False
     try:
         if detect(text) != 'ur':
@@ -183,28 +171,29 @@ with st.sidebar:
     st.markdown("---")
     st.session_state.use_typing_effect = st.checkbox("Enable Typing Animation", value=True)
     example = st.selectbox("Try an example:", [
-        "کیا حال ہے؟",
-        "آپ کا نام کیا ہے؟",
-        "میں ٹھیک ہوں، شکریہ۔",
-        "برائے مہربانی مدد کریں۔",
-        "میں آپ سے محبت کرتا ہوں۔"
+        "غزل کے رنگ سے رنگین ہے یہ زمین",
+        "دل سے دل تک جو بات جاتی ہے",
+        "شام ڈھلے جو چاند چمکتا ہے",
+        "محبت کی راہ میں کانٹوں کی بات",
+        "زندگی ایک خواب سا گزر جاتی ہے"
     ])
     if st.button("Use Example"):
         st.session_state.urdu_text = example
 
 # Main
-st.title("🌐 Urdu to Hindi Transliterator")
-st.markdown("Convert Urdu Nastaliq script into Hindi Devanagari effortlessly.")
+st.title("Urdu to Hindi Transliterator")
+st.markdown("Convert Urdu Nastaliq poetry into Hindi Devanagari.")
 
-st.markdown("---")
-
-# Input
+# Input Card
+st.markdown("<div class='card'>", unsafe_allow_html=True)
+st.subheader("Enter Urdu Text")
 urdu_text = st.text_area(
-    "Enter Urdu Text Below:",
+    "",
     value=st.session_state.urdu_text,
     key="urdu_input",
-    placeholder="Type or paste Urdu text here",
+    placeholder="Type or paste Urdu poetry here",
     help="Enter Urdu text in Nastaliq script to transliterate into Hindi Devanagari.",
+    label_visibility="collapsed"
 )
 
 # Action Buttons
@@ -218,19 +207,20 @@ with col2:
     if st.button("Clear"):
         st.session_state.urdu_text = ""
         st.session_state.hindi_result = ""
+st.markdown("</div>", unsafe_allow_html=True)
 
-# Output Results
+# Output Card
 if st.session_state.hindi_result:
-    st.markdown("### Result")
+    st.markdown("<div class='card'>", unsafe_allow_html=True)
+    st.subheader("Results")
     
-    st.markdown("<div class='result-box'><b>Original Urdu:</b>", unsafe_allow_html=True)
+    st.markdown("<b>Original Urdu:</b>", unsafe_allow_html=True)
     if st.session_state.use_typing_effect:
         type_writer_effect(st.session_state.urdu_text, speed=0.07)
     else:
         st.markdown(f"<div class='urdu-text'>{st.session_state.urdu_text}</div>", unsafe_allow_html=True)
-    st.markdown("</div>", unsafe_allow_html=True)
 
-    st.markdown("<div class='result-box'><b>Hindi Transliteration:</b>", unsafe_allow_html=True)
+    st.markdown("<b>Hindi Transliteration:</b>", unsafe_allow_html=True)
     if st.session_state.use_typing_effect:
         type_writer_effect_hindi(st.session_state.hindi_result, speed=0.06)
     else:
@@ -246,9 +236,8 @@ if st.session_state.hindi_result:
     st.markdown("</div>", unsafe_allow_html=True)
 
 # Footer
-st.markdown("---")
 st.markdown(
-    "<div class='footer'>Developed with love by "
+    "<div class='footer'>Developed by "
     "<a href='https://nucleosight.com' target='_blank'>Nucleosight</a></div>", 
     unsafe_allow_html=True
 )
